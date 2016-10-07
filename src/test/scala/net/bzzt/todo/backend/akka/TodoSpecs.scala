@@ -2,33 +2,49 @@ package net.bzzt.todo.backend.akka
 
 import org.scalatest._
 
-import spray.json._
-
-import akka.http.scaladsl.testkit._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.ContentTypes._
-
 class TodoSpecs extends Suite
-    with ScalatestRouteTest
-    with RouteTest
-    with WordSpecLike
-    with ShouldMatchers
-    with TodoRoutes
-    with TodoStorage {
+  with WordSpecLike
+  with ShouldMatchers
+   {
 
-  "The Todo backend" should {
-    "respond to a POST with the todo which was posted to it" in {
-      Post("/todos", HttpEntity(`application/json`, """{ "title": "a todo" }""")) ~> routes ~> check {
-        status should equal(StatusCodes.OK)
-        entityAs[JsObject].fields("title") should equal(JsString("a todo"))
-      }
+  "A Todo" should {
+    "correctly initialize itself with default values" in {
+      val todo = Todo("1", "Learn Scala")
+
+      todo.id should equal("1")
+      todo.title should equal("Learn Scala")
+      todo.completed should equal(false)
     }
 
-    "create a todo with an order field" in {
-      Post("/todos", HttpEntity(`application/json`, """{ "title": "a todo", "order": 523 }""")) ~> routes ~> check {
-        status should equal(StatusCodes.OK)
-        entityAs[JsObject].fields("order") should equal(JsNumber(523))
-      }
+    "correctly update itself with given a 'TodoUpdate'" in {
+      val todo = Todo("1", "Learn Scala")
+
+      val todoUpdate = TodoUpdate(
+        title = None,
+        completed = Some(true),
+        order = Some(42)
+      )
+
+      val newTodo = Todo(todo, todoUpdate)
+
+      newTodo.id should equal("1")
+      newTodo.title should equal("Learn Scala")
+      newTodo.completed should equal(true)
+      newTodo.order should equal(42)
+    }
+
+    "correctly create a 'Todo' based on a title and a 'TodoUpdate'" in {
+      val todoUpdate = TodoUpdate(
+        title = None,
+        completed = Some(true),
+        order = None
+      )
+
+      val todo = Todo("Learn ScalaTest", todoUpdate)
+
+      todo.title should equal("Learn ScalaTest")
+      todo.completed should equal(true)
+      todo.order should equal(0)
     }
   }
 }
