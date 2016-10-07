@@ -18,54 +18,49 @@ import akka.pattern._
 import akka.util._
 
 trait TodoRoutes extends TodoMarshalling
-  with TodoStorageProvider {
+  with TodoMappingProvider {
 
   implicit val timeout: Timeout = 2.seconds
 
   def routes = {
-    (respondWithHeaders(
-      `Access-Control-Allow-Origin`.`*`,
-      `Access-Control-Allow-Headers`("Accept", "Content-Type"),
-      `Access-Control-Allow-Methods`(GET, HEAD, POST, DELETE, OPTIONS, PUT, PATCH)
-    ) & extract(_.request.getUri())) { uri =>
+     extract(_.request.getUri()) { uri =>
+
       implicit val todoFormat = todoFormatFor(uri.path("/todos").toString)
-        pathPrefix("todos") {
+
+          pathPrefix("todos") {
           pathEnd {
             get {
-              onSuccess(todoStorage ? TodoStorageActor.Get) { todos =>
-                complete(StatusCodes.OK, todos.asInstanceOf[Iterable[Todo]])
-              }
+              complete(StatusCodes.OK, todoMapping.getList())
             } ~
             post {
               entity(as[TodoUpdate]) { update =>
-                onSuccess(todoStorage ? TodoStorageActor.Add(update)) { todo =>
-                  complete(StatusCodes.OK, todo.asInstanceOf[Todo])
-                }
+                val todo = todoMapping.add(update)
+                complete(StatusCodes.OK, todo)
               }
             } ~
             delete {
-              onSuccess(todoStorage ? TodoStorageActor.Clear) { _ =>
-                complete(StatusCodes.OK)
-              }
+              todoMapping.clear()
+              complete(StatusCodes.OK)
             }
           } ~ {
             path(Segment) { id =>
               get {
-                onSuccess(todoStorage ? TodoStorageActor.Get(id)) { todo =>
-                  complete(StatusCodes.OK, todo.asInstanceOf[Todo])
+                todoMapping.get(id) match {
+                  case None => complete(StatusCodes.NotFound)
+                  case Some(todo) => complete(StatusCodes.OK, todo)
                 }
               } ~
               patch {
                 entity(as[TodoUpdate]) { update =>
-                  onSuccess(todoStorage ? TodoStorageActor.Update(id, update)) { todo =>
-                    complete(StatusCodes.OK, todo.asInstanceOf[Todo])
+                  todoMapping.update(id, update)  match {
+                    case None => complete(StatusCodes.NotFound)
+                    case Some(todo) => complete(StatusCodes.OK, todo)
                   }
                 }
               } ~
               delete {
-                onSuccess(todoStorage ? TodoStorageActor.Delete(id)) { _ =>
-                  complete(StatusCodes.OK)
-                }
+                todoMapping.delete(id)
+                complete(StatusCodes.OK)
               }
             }
           }
