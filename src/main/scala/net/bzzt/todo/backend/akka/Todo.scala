@@ -3,6 +3,7 @@ package net.bzzt.todo.backend.akka
 import scala.util.Random
 
 case class Todo(id: String, title: String, completed: Boolean = false, order: Int = 0)
+
 case object Todo {
   private def nextId() =  Random.nextInt(Integer.MAX_VALUE).toString
 

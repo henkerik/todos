@@ -5,7 +5,6 @@ import org.scalatest._
 import spray.json._
 
 import akka.http.scaladsl.testkit._
-import akka.http.scaladsl.server._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ContentTypes._
 

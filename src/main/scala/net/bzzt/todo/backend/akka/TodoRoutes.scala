@@ -20,7 +20,7 @@ import akka.util._
 trait TodoRoutes extends TodoMarshalling
   with TodoStorageProvider {
 
-  implicit val timeout: Timeout = 2 seconds
+  implicit val timeout: Timeout = 2.seconds
 
   def routes = {
     (respondWithHeaders(
